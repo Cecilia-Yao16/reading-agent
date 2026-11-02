@@ -27,16 +27,21 @@ class WereadClient:
     async def call(self, weread_key: str, action: str, params: dict | None = None) -> dict:
         headers = {
             "Authorization": f"Bearer {weread_key}",
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
         }
         payload = {
             "api_name": action,
-            "skill_version": "1.0.3",
+            "skill_version":"1.0.5",
             **(params or {})
         }
+
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
-                response = await client.post(self.gateway_url, json=payload, headers=headers)
+                response = await client.post(
+                    self.gateway_url,
+                    json=payload,
+                    headers=headers
+                )
         except httpx.TimeoutException:
             logger.error("微信读书网关请求超时, action=%s", action)
             raise WereadTimeoutError(f"请求微信读书网关超时 (action={action})")
@@ -44,24 +49,29 @@ class WereadClient:
             logger.error("微信读书网关网络错误: %s", exc)
             raise WereadGatewayError(f"微信读书网关网络错误: {exc}")
 
+        # 状态码判断
         if response.status_code in (401, 403):
             logger.error("微信读书鉴权失败, status=%s", response.status_code)
             raise WereadAuthError()
         if response.status_code >= 400:
-            logger.error("微信读书网关 HTTP 错误, status=%s", response.status_code)
+            logger.error("微信读书网关 HTTP 错误, status=%s, resp=%s", response.status_code, response.text)
             raise WereadGatewayError(f"微信读书网关返回 HTTP {response.status_code}")
 
+        # 解析JSON
         try:
             data = response.json()
         except ValueError:
+            logger.error("网关返回非JSON: %s", response.text)
             raise WereadGatewayError("微信读书网关返回的不是合法 JSON")
 
+        # 业务错误码判断
         if isinstance(data, dict):
             errcode = data.get("errcode") or data.get("code") or data.get("errno")
             errmsg = data.get("errmsg") or data.get("message") or data.get("msg")
             if errcode is not None and errcode != 0:
-                logger.error("微信读书网关业务错误: %s, %s", errcode, errmsg)
+                logger.error("微信读书网关业务错误: errcode=%s, errmsg=%s", errcode, errmsg)
                 raise WereadGatewayError(errmsg or "微信读书网关业务错误")
+
         if "data" in data:
             return data["data"]
         return data

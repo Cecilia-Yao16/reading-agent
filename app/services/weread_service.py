@@ -15,12 +15,12 @@ weread_client = WereadClient()
 
 async def fetch_books(weread_key: str) -> dict[str, Any]:
     """获取书架书籍列表。"""
-    return await weread_client.call(weread_key=weread_key, action="fetch_books")
+    return await weread_client.call(weread_key=weread_key, action="/shelf/sync")
 
 
 async def fetch_statistics(weread_key: str) -> dict[str, Any]:
     """获取阅读时长、阅读天数、阅读进度统计数据。"""
-    return await weread_client.call(weread_key=weread_key, action="fetch_statistics")
+    return await weread_client.call(weread_key=weread_key, action="/readdata/detail")
 
 
 async def fetch_notes(
@@ -33,7 +33,7 @@ async def fetch_notes(
     params: dict[str, Any] = {"page": page, "page_size": page_size}
     if book_id:
         params["book_id"] = book_id
-    return await weread_client.call(weread_key=weread_key, action="fetch_notes", params=params)
+    return await weread_client.call(weread_key=weread_key, action="/book/bookmarklist", params=params)
 
 
 async def build_reading_preferences(weread_key: str) -> str:

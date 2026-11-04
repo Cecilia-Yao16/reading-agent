@@ -1,0 +1,2555 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我们叫什么队 · Reading Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #eeebe4;
+      font-family: 'General Sans', Inter, system-ui, sans-serif;
+    }
+
+    #world {
+      position: fixed;
+      inset: 0;
+      display: block;
+    }
+
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background-color: rgba(238, 235, 228, 0.66);
+      background-image:
+        linear-gradient(rgba(20, 22, 25, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20, 22, 25, 0.05) 1px, transparent 1px),
+        linear-gradient(rgba(20, 22, 25, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20, 22, 25, 0.025) 1px, transparent 1px);
+      background-size: 160px 160px, 160px 160px, 32px 32px, 32px 32px;
+      background-position: center center;
+      backdrop-filter: blur(2px);
+      transition: opacity 0.9s ease, visibility 0.9s ease;
+    }
+
+    #loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-inner {
+      position: absolute;
+      left: 32px;
+      top: 30px;
+      text-align: left;
+    }
+
+    .loader-sheet {
+      position: absolute;
+      top: 32px;
+      right: 32px;
+      text-align: right;
+      color: rgba(20, 22, 25, 0.64);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .loader-title {
+      font-family: 'Instrument Serif', 'Times New Roman', serif;
+      font-size: 30px;
+      font-weight: 400;
+      color: #141619;
+      line-height: 1;
+    }
+
+    .loader-members {
+      display: flex;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .loader-members span {
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(20, 22, 25, 0.14);
+      color: rgba(20, 22, 25, 0.8);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .loader-model {
+      position: absolute;
+      left: 32px;
+      bottom: 26px;
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-start;
+      gap: 8px;
+      color: #17806d;
+    }
+
+    .loader-model strong {
+      font-family: 'Instrument Serif', 'Times New Roman', serif;
+      font-size: 56px;
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .loader-model span {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(20, 22, 25, 0.64);
+      white-space: nowrap;
+    }
+
+    .loader-model em {
+      font-family: 'Instrument Serif', 'Times New Roman', serif;
+      font-size: 26px;
+      font-style: normal;
+    }
+
+    .loader-progress-ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(52vh, 420px);
+      height: min(52vh, 420px);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background:
+        conic-gradient(#17806d 0deg, #17806d var(--progress, 0deg), rgba(20, 22, 25, 0.1) var(--progress, 0deg), rgba(20, 22, 25, 0.1) 360deg);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
+      pointer-events: none;
+    }
+
+    .loader-progress-ring::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(20, 22, 25, 0.12);
+    }
+
+    .enter-button {
+      position: absolute;
+      left: 50%;
+      top: calc(50% + 190px);
+      transform: translateX(-50%);
+      padding: 13px 26px;
+      border: 0;
+      border-radius: 999px;
+      background: #141619;
+      color: #fff;
+      font-family: 'General Sans', Inter, sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.18s ease, background 0.18s ease;
+    }
+
+    .enter-button.ready {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .enter-button:hover {
+      background: #17806d;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    #webgl-error {
+      display: none;
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      z-index: 30;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #141619;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    #chatPanel {
+      display: none;
+      position: fixed;
+      right: 28px;
+      top: 84px;
+      width: 380px;
+      max-height: 72%;
+      z-index: 45;
+      flex-direction: column;
+      border-radius: 12px;
+      background: rgba(246, 242, 233, 0.92);
+      border: 1px solid rgba(20, 22, 25, 0.14);
+      box-shadow: 0 30px 80px rgba(20, 22, 25, 0.16);
+      overflow: hidden;
+      font-family: 'General Sans', Inter, system-ui, sans-serif;
+    }
+
+    #chatPanel.open {
+      display: flex;
+    }
+
+    #dataPanel {
+      display: none;
+      position: fixed;
+      left: 28px;
+      top: 84px;
+      width: 360px;
+      max-height: 72%;
+      z-index: 45;
+      border-radius: 12px;
+      background: rgba(246, 242, 233, 0.92);
+      border: 1px solid rgba(20, 22, 25, 0.14);
+      box-shadow: 0 30px 80px rgba(20, 22, 25, 0.16);
+      overflow: hidden;
+      font-family: 'General Sans', Inter, system-ui, sans-serif;
+    }
+
+    #dataPanel.open {
+      display: block;
+    }
+
+    .data-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(20, 22, 25, 0.1);
+      font-size: 14px;
+      font-weight: 600;
+      color: #141619;
+    }
+
+    #dataContent {
+      padding: 12px 14px;
+      max-height: calc(72vh - 54px);
+      overflow-y: auto;
+      font-size: 13px;
+      color: #141619;
+      line-height: 1.6;
+    }
+
+    .data-item {
+      padding: 9px 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(20, 22, 25, 0.08);
+    }
+
+    .data-item strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .data-item small {
+      display: block;
+      margin-top: 3px;
+      color: rgba(20, 22, 25, 0.6);
+      font-size: 12px;
+    }
+
+    .note-library {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .note-group {
+      border: 1px solid rgba(20, 22, 25, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .note-group-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      background: rgba(23, 128, 109, 0.1);
+      border-bottom: 1px solid rgba(20, 22, 25, 0.08);
+    }
+
+    .note-group-head strong {
+      font-size: 13px;
+      color: #0f6b5a;
+    }
+
+    .note-group-head small {
+      color: rgba(20, 22, 25, 0.55);
+      font-size: 11px;
+    }
+
+    .note-card {
+      margin: 8px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      border-left: 3px solid #17806d;
+      background: rgba(227, 239, 207, 0.8);
+    }
+
+    .note-card p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .note-card-meta {
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: rgba(20, 22, 25, 0.5);
+      font-size: 11px;
+    }
+
+    .note-card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .note-card-actions button {
+      border: 0;
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-size: 11px;
+      color: #0f6b5a;
+      background: rgba(23, 128, 109, 0.12);
+      cursor: pointer;
+    }
+
+    .note-editor {
+      padding: 12px;
+    }
+
+    .note-editor textarea {
+      width: 100%;
+      min-height: 110px;
+      padding: 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(20, 22, 25, 0.14);
+      outline: none;
+      background: rgba(255, 255, 255, 0.92);
+      color: #141619;
+      font-size: 12px;
+      line-height: 1.6;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .note-editor-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .note-editor-actions button {
+      border: 0;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .note-editor-save {
+      background: #17806d;
+      color: #fff;
+    }
+
+    .note-editor-cancel {
+      background: rgba(20, 22, 25, 0.08);
+      color: #141619;
+    }
+
+    .note-add-btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      background: #17806d;
+      cursor: pointer;
+    }
+
+    .chat-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(20, 22, 25, 0.1);
+      font-size: 14px;
+      font-weight: 600;
+      color: #141619;
+    }
+
+    .chat-close {
+      border: 0;
+      background: transparent;
+      color: #141619;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .chat-key-row {
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(20, 22, 25, 0.08);
+    }
+
+    .chat-key-row input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(20, 22, 25, 0.14);
+      outline: none;
+      background: rgba(255, 255, 255, 0.9);
+      color: #141619;
+      font-size: 12px;
+    }
+
+    #chatMessages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-msg {
+      max-width: 88%;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #141619;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(20, 22, 25, 0.08);
+      white-space: pre-wrap;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      background: #17806d;
+      color: #fff;
+    }
+
+    .chat-msg.quote {
+      border-left: 3px solid #17806d;
+    }
+
+    .chat-msg.summary,
+    .chat-msg.note {
+      background: rgba(227, 239, 207, 0.9);
+    }
+
+    .chat-msg.mindmap {
+      border: 1px dashed #17806d;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid rgba(20, 22, 25, 0.1);
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(20, 22, 25, 0.16);
+      outline: none;
+      background: rgba(255, 255, 255, 0.92);
+      color: #141619;
+      font-size: 13px;
+    }
+
+    .chat-input-row button {
+      padding: 0 14px;
+      border: 0;
+      border-radius: 8px;
+      background: #141619;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .chat-input-row button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    /* ============ 对话助手悬浮按钮（聊天入口始终可见） ============ */
+  .chat-floating {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 50;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 999px;
+    background: #17806d;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(23, 128, 109, 0.35);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .chat-floating:hover {
+    background: #116852;
+    transform: translateY(-1px);
+  }
+
+  /* 聊天错误提示：柔和豆沙红 */
+  .chat-msg.error {
+    margin: 10px 0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #fbeae7;
+    color: #b3554a;
+    border: 1px solid #f0d3ce;
+    font-size: 13px;
+    line-height: 1.6;
+    word-break: break-word;
+  }
+  /* ============ 书单推荐面板 ============ */
+  .rec-toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
+  .rec-mode { padding: 4px 12px; border: 1px solid rgba(20,22,25,.14); border-radius: 999px; background: transparent; color: #17806d; font-size: 12px; cursor: pointer; font-weight: 500; }
+  .rec-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .rec-tag { padding: 3px 10px; border: 1px solid rgba(23,128,109,.3); border-radius: 999px; background: #f6faf7; color: #2c3330; font-size: 12px; cursor: pointer; }
+  .rec-tag.active { background: #2b6b48; border-color: #2b6b48; color: #fff; }
+  .rec-hint { font-size: 12px; color: #556660; margin: 6px 0; }
+  .rec-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .rec-input, .rec-select { padding: 6px 10px; border: 1px solid rgba(20,22,25,.18); border-radius: 8px; font-size: 13px; background: #fff; font-family: inherit; }
+  .rec-input { flex: 1; min-width: 120px; }
+  .rec-btn-primary { padding: 7px 16px; border: none; border-radius: 8px; background: #2b6b48; color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .rec-btn-primary:hover:not(:disabled) { background: #245a3d; }
+  .rec-btn-primary:disabled { background: #b9cdc0; cursor: not-allowed; }
+  .rec-btn-stop { padding: 7px 14px; border: none; border-radius: 8px; background: #73a88c; color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .rec-tip { display: flex; align-items: center; gap: 6px; padding: 8px 12px; margin-bottom: 8px; border-radius: 10px; background: #eef7f0; color: #2b6b48; font-size: 13px; }
+  .rec-cards { max-height: 300px; overflow-y: auto; }
+  .rec-cards::-webkit-scrollbar { width: 6px; }
+  .rec-cards::-webkit-scrollbar-thumb { background: #c5ddd2; border-radius: 6px; }
+  .rec-error { padding: 10px 12px; border-radius: 10px; background: #fbeae7; color: #b3554a; font-size: 13px; }
+  .book-card { display: flex; gap: 10px; padding: 10px; margin: 8px 0; border: 1px solid rgba(23,128,109,.25); border-radius: 12px; background: #fff; cursor: pointer; }
+  .book-card:hover { box-shadow: 0 2px 8px rgba(23,128,109,.18); }
+  .book-cover { flex-shrink: 0; width: 60px; height: 84px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .book-info { flex: 1; min-width: 0; }
+  .book-title { font-size: 15px; font-weight: 600; color: #2b6b48; }
+  .book-author { font-size: 12px; color: #556660; }
+  .book-desc { font-size: 13px; color: #2c3330; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .book-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .tag-chip-mini { padding: 1px 8px; border-radius: 999px; background: rgba(23,128,109,.12); color: #2b6b48; font-size: 11px; }
+  .book-list-item { display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; margin: 6px 0; border: 1px solid rgba(23,128,109,.25); border-radius: 10px; background: #fff; cursor: pointer; font-size: 13px; font-family: inherit; }
+  .book-list-item:hover { border-color: #2b6b48; }
+  .list-title { color: #2c3330; font-weight: 500; }
+  .list-author { color: #9db8aa; font-size: 12px; }
+  .book-detail-title { font-size: 17px; font-weight: 600; color: #2b6b48; margin-bottom: 2px; }
+  .book-detail-sub { font-size: 12px; color: #556660; margin-bottom: 8px; }
+  .book-detail-desc { font-size: 14px; color: #2c3330; margin-bottom: 10px; }
+  .note-item { padding: 8px 10px; margin: 6px 0; border-radius: 8px; background: #f0f4dc; color: #2c3330; font-size: 13px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-item { display: flex; flex-direction: column; align-items: center; padding: 12px 8px; border-radius: 10px; background: #eef7f0; }
+  .stat-item strong { font-size: 22px; color: #2b6b48; }
+  .stat-item span { font-size: 12px; color: #556660; }
+
+</style>
+</head>
+<body>
+  <div id="loader">
+    <div class="loader-progress-ring" id="loader-ring"></div>
+    <div class="loader-inner">
+      <h1 class="loader-title">我们叫什么队</h1>
+      <div class="loader-members">
+        <span>姚芷馨</span>
+        <span>林悠</span>
+        <span>陈颖珊</span>
+        <span>陈佳絮</span>
+      </div>
+    </div>
+    <div class="loader-sheet">Sheet 01 — A tiny planet · Scale 1 : 200 000</div>
+    <div class="loader-model">
+      <span>Drafting the model</span>
+      <strong id="loader-count">0</strong>
+      <em>%</em>
+    </div>
+    <button class="enter-button" id="enter">Enter the planet</button>
+  </div>
+  <div id="webgl-error">WebGL 不可用，请开启硬件加速后刷新页面。</div>
+  <div id="chatPanel">
+    <div class="chat-head">
+      <span>对话助手</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <button class="chat-mode" id="chatMode" style="font-size:12px;font-weight:500;color:#17806d;background:transparent;border:1px solid rgba(20,22,25,0.14);border-radius:8px;padding:4px 8px;">Mock</button>
+        <button class="chat-close" id="chatClose" aria-label="关闭">×</button>
+      </span>
+    </div>
+    <div class="chat-key-row">
+      <input id="wereadKey" placeholder="微信读书 Key" />
+    </div>
+    <div class="chat-key-row">
+      <input id="backendUrl" placeholder="后端地址，如 http://192.168.1.5:8000" />
+    </div>
+    <div id="chatMessages"></div>
+    <div class="chat-input-row">
+      <input id="chatInput" placeholder="输入你的问题" />
+      <button id="chatSend">发送</button>
+      <button id="chatStop" disabled>停止</button>
+    </div>
+  </div>
+  <div id="dataPanel">
+    <div class="data-head">
+      <span id="dataTitle">书籍库</span>
+      <button class="chat-close" id="dataClose" aria-label="关闭">×</button>
+    </div>
+    <div id="dataContent"></div>
+  </div>
+
+    <button id="chatFloating" class="chat-floating" aria-label="打开对话助手">对话助手</button>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+import {
+  sendQuery,
+  fetchBookList,
+  fetchBookDetail,
+  fetchBookNotes,
+  fetchBookStats,
+  stopGenerate,
+  setMock as setBookMock,
+  isMock as isBookMock,
+} from './lib/api/agent.js';
+
+    const canvasHost = document.createElement('div');
+    canvasHost.id = 'world';
+    document.body.appendChild(canvasHost);
+
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    } catch (error) {
+      document.getElementById('webgl-error').style.display = 'block';
+      throw error;
+    }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    canvasHost.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 80);
+    camera.position.set(0, 2.3, 7.2);
+
+    const skyMaterial = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      uniforms: {
+        topColor: { value: new THREE.Color('#f3e0dc') },
+        horizonColor: { value: new THREE.Color('#f5f0e6') },
+        nightFactor: { value: 0 },
+      },
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+          vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 horizonColor;
+        uniform float nightFactor;
+        varying vec3 vWorldPosition;
+        void main() {
+          float h = normalize(vWorldPosition).y * 0.5 + 0.5;
+          vec3 day = mix(horizonColor, topColor, pow(h, 1.25));
+          vec3 night = mix(vec3(0.04, 0.04, 0.08), vec3(0.10, 0.07, 0.16), pow(h, 1.25));
+          gl_FragColor = vec4(mix(day, night, nightFactor), 1.0);
+        }
+      `,
+    });
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(38, 40, 20), skyMaterial);
+    scene.add(sky);
+
+    const ambient = new THREE.AmbientLight('#fff4f7', 0.85);
+    scene.add(ambient);
+    const hemisphere = new THREE.HemisphereLight('#fff4e8', '#5f7050', 0.75);
+    scene.add(hemisphere);
+    const sun = new THREE.DirectionalLight('#fff2e3', 1.5);
+    sun.position.set(5, 6, 5);
+    scene.add(sun);
+    const rim = new THREE.DirectionalLight('#ffc7dd', 0.7);
+    rim.position.set(-5, -3, -5);
+    scene.add(rim);
+
+    const starCount = 900;
+    const starPositions = new Float32Array(starCount * 3);
+    const random = (() => {
+      let value = 20261103;
+      return () => {
+        value = (value * 1664525 + 1013904223) >>> 0;
+        return value / 4294967296;
+      };
+    })();
+    for (let i = 0; i < starCount; i += 1) {
+      const theta = random() * Math.PI * 2;
+      const phi = Math.acos(2 * random() - 1);
+      const radius = 24 + random() * 8;
+      starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = radius * Math.cos(phi);
+      starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+    }
+    const starGeometry = new THREE.BufferGeometry();
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const stars = new THREE.Points(
+      starGeometry,
+      new THREE.PointsMaterial({ color: '#ffffff', size: 0.07, transparent: true, opacity: 0.9 }),
+    );
+    stars.visible = false;
+    scene.add(stars);
+
+    const planetGroup = new THREE.Group();
+    scene.add(planetGroup);
+
+    function mulberry32(seed) {
+      let value = seed;
+      return () => {
+        value |= 0;
+        value = (value + 0x6d2b79f5) | 0;
+        let t = Math.imul(value ^ (value >>> 15), 1 | value);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function createPerlin(seed) {
+      const rand = mulberry32(seed);
+      const perm = new Uint8Array(512);
+      const grad = new Float32Array(256);
+      for (let i = 0; i < 256; i += 1) {
+        perm[i] = i;
+        grad[i] = rand() * 2 - 1;
+      }
+      for (let i = 255; i > 0; i -= 1) {
+        const j = Math.floor(rand() * (i + 1));
+        const tmp = perm[i];
+        perm[i] = perm[j];
+        perm[j] = tmp;
+      }
+      for (let i = 0; i < 256; i += 1) perm[i + 256] = perm[i];
+      const hash = (x, y, z) => {
+        const h1 = perm[x & 255] + (y & 255);
+        const h2 = perm[h1] + (z & 255);
+        return grad[perm[h2]];
+      };
+      const fade = (v) => v * v * (3 - 2 * v);
+      const lerp3 = (a, b, t) => a + (b - a) * t;
+      const noise3 = (x, y, z) => {
+        const xi = Math.floor(x);
+        const yi = Math.floor(y);
+        const zi = Math.floor(z);
+        const xf = x - xi;
+        const yf = y - yi;
+        const zf = z - zi;
+        const u = fade(xf);
+        const v = fade(yf);
+        const w = fade(zf);
+        const a = lerp3(hash(xi, yi, zi), hash(xi + 1, yi, zi), u);
+        const b = lerp3(hash(xi, yi + 1, zi), hash(xi + 1, yi + 1, zi), u);
+        const c = lerp3(hash(xi, yi, zi + 1), hash(xi + 1, yi, zi + 1), u);
+        const d = lerp3(hash(xi, yi + 1, zi + 1), hash(xi + 1, yi + 1, zi + 1), u);
+        return lerp3(lerp3(a, b, v), lerp3(c, d, v), w);
+      };
+      return (x, y, z, octaves = 4) => {
+        let amplitude = 0.5;
+        let frequency = 1;
+        let sum = 0;
+        let weight = 0;
+        for (let i = 0; i < octaves; i += 1) {
+          sum += noise3(x * frequency, y * frequency, z * frequency) * amplitude;
+          weight += amplitude;
+          amplitude *= 0.5;
+          frequency *= 2.03;
+        }
+        return sum / weight;
+      };
+    }
+
+    const smoothstep = (a, b, x) => {
+      const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const noiseA = createPerlin(11);
+    const noiseB = createPerlin(29);
+    const SCALE = 2.3 / 30;
+
+    function heightAt(v) {
+      let t = noiseA(v.x * 1.45 + 3.1, v.y * 1.45 + 7.7, v.z * 1.45 + 1.3, 5) * 1.35 + 0.12;
+      const n = 1 - Math.abs(noiseB(v.x * 2.2, v.y * 2.2, v.z * 2.2, 3) * 2);
+      t += Math.max(0, t - 0.25) * n * n * 1.1;
+      return t;
+    }
+
+    function radiusAt(v) {
+      const t = heightAt(v);
+      return 2.2 + (t > 0 ? (t - 0) * 4.6 * SCALE + 0.3 * SCALE : (t - 0) * 2.4 * SCALE);
+    }
+
+    const terrainGroup = new THREE.Group();
+    terrainGroup.scale.setScalar(1);
+    planetGroup.add(terrainGroup);
+
+    const terrainGeometry = new THREE.IcosahedronGeometry(2.2, 4);
+    const terrainPositions = terrainGeometry.getAttribute('position');
+    const terrainVector = new THREE.Vector3();
+    for (let i = 0; i < terrainPositions.count; i += 1) {
+      terrainVector.fromBufferAttribute(terrainPositions, i).normalize();
+      terrainVector.multiplyScalar(radiusAt(terrainVector));
+      terrainPositions.setXYZ(i, terrainVector.x, terrainVector.y, terrainVector.z);
+    }
+    terrainGeometry.computeVertexNormals();
+
+    const terrainColors = new Float32Array(terrainPositions.count * 3);
+    const colorRandom = mulberry32(3);
+    const palette = {
+      seabed: new THREE.Color('#cfc29e'),
+      foam: new THREE.Color('#f1f3ea'),
+      sand: new THREE.Color('#ead9b4'),
+      grassA: new THREE.Color('#a8c47e'),
+      grassB: new THREE.Color('#8fb46e'),
+      field1: new THREE.Color('#cdd28b'),
+      field2: new THREE.Color('#b3c97a'),
+      forest: new THREE.Color('#5e8d5e'),
+      rock: new THREE.Color('#ab9f95'),
+      rock2: new THREE.Color('#8f8580'),
+      snow: new THREE.Color('#f7f4ef'),
+    };
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    const centroid = new THREE.Vector3();
+    const faceNormal = new THREE.Vector3();
+    const color = new THREE.Color();
+    for (let i = 0; i < terrainPositions.count; i += 3) {
+      a.fromBufferAttribute(terrainPositions, i);
+      b.fromBufferAttribute(terrainPositions, i + 1);
+      c.fromBufferAttribute(terrainPositions, i + 2);
+      centroid.copy(a).add(b).add(c).divideScalar(3);
+      const n = centroid.length() - 2.2;
+      const dir = centroid.clone().normalize();
+      faceNormal.crossVectors(b.clone().sub(a), c.clone().sub(a)).normalize();
+      const flatness = 1 - Math.abs(faceNormal.dot(dir));
+      const noiseValue = noiseB(dir.x * 6, dir.y * 6, dir.z * 6, 2);
+      if (n < -0.15 * SCALE) {
+        color.copy(palette.seabed).multiplyScalar(0.92 + n * 0.03);
+      } else if (n < 0.42 * SCALE) {
+        color.copy(palette.foam).lerp(palette.sand, smoothstep(0.05 * SCALE, 0.42 * SCALE, n));
+      } else if (n < 0.75 * SCALE) {
+        color.copy(palette.sand);
+      } else if (n < 2.9 * SCALE) {
+        color.copy(palette.grassA).lerp(palette.grassB, smoothstep(-0.2, 0.3, noiseValue));
+        if (noiseA(dir.x * 3.1 + 9, dir.y * 3.1, dir.z * 3.1, 2) > 0.18 && n < 2.2 * SCALE) {
+          color.copy(Math.sin((dir.x * 0.8 + dir.z * 0.6) * 140) > 0 ? palette.field1 : palette.field2);
+        }
+      } else if (n < 3.9 * SCALE) {
+        color.copy(palette.forest).lerp(palette.grassB, colorRandom() * 0.25);
+      } else if (n < 5.4 * SCALE) {
+        color.copy(palette.rock).lerp(palette.rock2, flatness);
+      } else {
+        color.copy(palette.snow);
+      }
+      color.multiplyScalar(0.96 + colorRandom() * 0.05 - flatness * 0.08);
+      for (let t = 0; t < 3; t += 1) {
+        terrainColors[(i + t) * 3] = color.r;
+        terrainColors[(i + t) * 3 + 1] = color.g;
+        terrainColors[(i + t) * 3 + 2] = color.b;
+      }
+    }
+    terrainGeometry.setAttribute('color', new THREE.BufferAttribute(terrainColors, 3));
+
+    const planet = new THREE.Mesh(
+      terrainGeometry,
+      new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        flatShading: true,
+        roughness: 0.92,
+      }),
+    );
+    planet.castShadow = true;
+    planet.receiveShadow = true;
+    planet.visible = false;
+    planetGroup.add(planet);
+
+    const M = { value: 0 };
+    const waterMaterial = new THREE.MeshStandardMaterial({
+      color: '#5ab3b0',
+      roughness: 0.22,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.94,
+    });
+    const waterUniforms = {
+      uDeep: { value: new THREE.Color('#2f8e96') },
+      uShallow: { value: new THREE.Color('#6fc7c0') },
+    };
+    waterMaterial.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = M;
+      shader.uniforms.uDeep = waterUniforms.uDeep;
+      shader.uniforms.uShallow = waterUniforms.uShallow;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        '#include <common>\nuniform float uTime; varying vec3 vWp;',
+      ).replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvWp = position;',
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        '#include <common>\nuniform float uTime; uniform vec3 uDeep,uShallow; varying vec3 vWp;',
+      ).replace(
+        '#include <color_fragment>',
+        '#include <color_fragment>\nfloat r1=sin(vWp.x*2.1+uTime*1.3)*sin(vWp.z*1.7-uTime*.9)*sin(vWp.y*1.9+uTime*.7); diffuseColor.rgb=mix(uDeep,uShallow,.55+.25*r1);',
+      );
+    };
+    const ocean = new THREE.Mesh(new THREE.IcosahedronGeometry(2.31, 3), waterMaterial);
+    ocean.receiveShadow = true;
+    ocean.visible = false;
+    planetGroup.add(ocean);
+
+    const wireframePlanet = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(2.2, 2),
+      new THREE.MeshBasicMaterial({ color: '#17806d', wireframe: true, transparent: true, opacity: 0.9 }),
+    );
+    planetGroup.add(wireframePlanet);
+
+    function latLonToVector3(lat, lon, radius) {
+      const phi = (90 - lat) * Math.PI / 180;
+      const theta = (lon + 180) * Math.PI / 180;
+      return new THREE.Vector3(
+        -radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta),
+      );
+    }
+
+    function placeOnSurface(object, lat, lon, radius = 2.2) {
+      const direction = latLonToVector3(lat, lon, 1).normalize();
+      const position = direction.clone().multiplyScalar(radiusAt(direction));
+      object.position.copy(position);
+      const up = new THREE.Vector3(0, 1, 0);
+      object.quaternion.setFromUnitVectors(up, position.clone().normalize());
+    }
+
+    function makeRoundedRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function makeTextTexture(lines, options = {}) {
+      const width = options.width || 512;
+      const height = options.height || 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, width, height);
+
+      if (options.background) {
+        ctx.save();
+        ctx.globalAlpha = options.backgroundAlpha === undefined ? 0.9 : options.backgroundAlpha;
+        ctx.fillStyle = options.background;
+        makeRoundedRect(ctx, options.paddingX || 14, options.paddingY || 12, width - (options.paddingX || 14) * 2, height - (options.paddingY || 12) * 2, 26);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (options.border) {
+        ctx.save();
+        ctx.strokeStyle = options.border;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.5;
+        makeRoundedRect(ctx, options.paddingX || 14, options.paddingY || 12, width - (options.paddingX || 14) * 2, height - (options.paddingY || 12) * 2, 26);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.textAlign = options.align || 'center';
+      ctx.textBaseline = 'middle';
+      const startY = options.startY === undefined ? height / 2 : options.startY;
+      lines.forEach((line, index) => {
+        ctx.font = line.font || options.font || '500 26px "General Sans", sans-serif';
+        ctx.fillStyle = line.color || options.color || '#141619';
+        ctx.fillText(line.text, width / 2, startY + (line.y || index * (line.gap || 40)));
+      });
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      return texture;
+    }
+
+    function makeSprite(lines, options = {}) {
+      const texture = makeTextTexture(lines, options);
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        opacity: options.opacity === undefined ? 1 : options.opacity,
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(options.scaleX || 3, options.scaleY || 1, 1);
+      sprite.userData = options.userData || {};
+      return sprite;
+    }
+
+    function makeBuilding(moduleId, name, bodyColor, roofColor, accentColor, badgeText) {
+      const group = new THREE.Group();
+      const material = new THREE.MeshStandardMaterial({ roughness: 0.92 });
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.1, 0.62), new THREE.MeshStandardMaterial({ color: '#9a9388', roughness: 0.95 }));
+      base.position.y = 0.05;
+      group.add(base);
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.5, 0.54), material.clone());
+      body.material.color.set(bodyColor);
+      body.position.y = 0.32;
+      group.add(body);
+
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.6, 0.52, 4), material.clone());
+      roof.material.color.set(roofColor);
+      roof.position.y = 0.76;
+      roof.rotation.y = Math.PI / 4;
+      group.add(roof);
+
+      const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.22, 0.09), material.clone());
+      chimney.material.color.set(accentColor);
+      chimney.position.set(0.16, 0.92, 0.05);
+      group.add(chimney);
+
+      const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.05), material.clone());
+      doorFrame.material.color.set('#6d6358');
+      doorFrame.position.set(0, 0.16, 0.28);
+      group.add(doorFrame);
+
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.2, 0.04), material.clone());
+      door.material.color.set('#c9a76b');
+      door.position.set(0, 0.16, 0.31);
+      group.add(door);
+
+      const awning = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.18), material.clone());
+      awning.material.color.set(accentColor);
+      awning.position.set(0, 0.3, 0.28);
+      group.add(awning);
+
+      const windowMaterial = new THREE.MeshStandardMaterial({ color: '#f3e6c3', roughness: 0.55 });
+      const frameMaterial = new THREE.MeshStandardMaterial({ color: '#6d6358', roughness: 0.9 });
+      [-0.19, 0.19].forEach((x) => {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.17, 0.05), frameMaterial.clone());
+        frame.position.set(x, 0.34, 0.28);
+        group.add(frame);
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.11, 0.03), windowMaterial.clone());
+        glass.position.set(x, 0.34, 0.31);
+        group.add(glass);
+      });
+
+      const step = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.16), material.clone());
+      step.material.color.set('#b3aa9a');
+      step.position.set(0, 0.02, 0.28);
+      group.add(step);
+
+      const extension = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.34), material.clone());
+      extension.material.color.set(bodyColor);
+      extension.position.set(-0.44, 0.16, -0.1);
+      group.add(extension);
+      const extensionRoof = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.26, 4), material.clone());
+      extensionRoof.material.color.set(roofColor);
+      extensionRoof.position.set(-0.44, 0.42, -0.1);
+      extensionRoof.rotation.y = Math.PI / 4;
+      group.add(extensionRoof);
+
+      const fence = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.08, 0.05), material.clone());
+      fence.material.color.set('#8a8378');
+      fence.position.set(0, 0.05, -0.34);
+      group.add(fence);
+      [-0.28, 0, 0.28].forEach((x) => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.14, 0.04), material.clone());
+        post.material.color.set('#756d62');
+        post.position.set(x, 0.08, -0.34);
+        group.add(post);
+      });
+
+      const label = makeSprite(
+        [
+          { text: badgeText, font: '600 30px "General Sans", sans-serif', color: '#141619' },
+          { text: name, font: '400 26px "Instrument Serif", serif', color: '#0f6b5a', y: 44 },
+        ],
+        {
+          width: 420,
+          height: 150,
+          background: 'rgba(246,242,233,0.92)',
+          border: 'rgba(23,128,109,0.55)',
+          backgroundAlpha: 0.88,
+          scaleX: 1.15,
+          scaleY: 0.38,
+          startY: 36,
+        },
+      );
+      label.position.y = 1.18;
+      group.add(label);
+
+      group.userData.moduleId = moduleId;
+      group.traverse((object) => {
+        if (object.isMesh) {
+          object.userData.moduleId = moduleId;
+          interactiveMeshes.push(object);
+        }
+      });
+      return group;
+    }
+
+    function makeTree(foliageColor) {
+      const group = new THREE.Group();
+      const material = new THREE.MeshStandardMaterial({ roughness: 0.92 });
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.028, 0.042, 0.16, 6),
+        material.clone(),
+      );
+      trunk.material.color.set('#8a6f55');
+      trunk.position.y = 0.08;
+      group.add(trunk);
+
+      const lower = new THREE.Mesh(
+        new THREE.ConeGeometry(0.17, 0.24, 6),
+        material.clone(),
+      );
+      lower.material.color.set(foliageColor);
+      lower.position.y = 0.28;
+      group.add(lower);
+
+      const upper = new THREE.Mesh(
+        new THREE.ConeGeometry(0.12, 0.2, 6),
+        material.clone(),
+      );
+      upper.material.color.set(foliageColor);
+      upper.position.y = 0.45;
+      group.add(upper);
+
+      const tip = new THREE.Mesh(
+        new THREE.ConeGeometry(0.065, 0.13, 6),
+        material.clone(),
+      );
+      tip.material.color.set(foliageColor);
+      tip.position.y = 0.58;
+      group.add(tip);
+      return group;
+    }
+
+    function makeBush(color) {
+      const group = new THREE.Group();
+      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.95, flatShading: true });
+      for (let i = 0; i < 4; i += 1) {
+        const puff = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045 + random() * 0.035, 1), material.clone());
+        puff.position.set((i - 1.5) * 0.05, 0.035 + random() * 0.03, (random() - 0.5) * 0.05);
+        group.add(puff);
+      }
+      return group;
+    }
+
+    function makeRock() {
+      const mesh = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.045 + random() * 0.045, 0),
+        new THREE.MeshStandardMaterial({ color: '#9a9488', roughness: 0.98, flatShading: true }),
+      );
+      mesh.scale.y = 0.62 + random() * 0.3;
+      mesh.rotation.set(random() * Math.PI, random() * Math.PI, random() * Math.PI);
+      return mesh;
+    }
+
+    function makeFlower(color) {
+      const group = new THREE.Group();
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.006, 0.008, 0.11, 5),
+        new THREE.MeshStandardMaterial({ color: '#6d8554', roughness: 0.9 }),
+      );
+      stem.position.y = 0.055;
+      group.add(stem);
+      const head = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.028, 1),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.7, flatShading: true }),
+      );
+      head.position.y = 0.11;
+      group.add(head);
+      return group;
+    }
+
+    const interactiveMeshes = [];
+
+    const readerHouse = makeBuilding('reader', 'House · 书单推荐', '#c47a5a', '#8f5b44', '#e6c6a1', '01');
+    placeOnSurface(readerHouse, 48, 8);
+    planetGroup.add(readerHouse);
+
+    const libraryPavilion = makeBuilding('library', 'Pavilion · 书籍库', '#7f9f8b', '#5c7a68', '#c3d6c6', '02');
+    placeOnSurface(libraryPavilion, 35, -100);
+    planetGroup.add(libraryPavilion);
+
+    const notesArchive = makeBuilding('notes', 'Archive · 读书笔记', '#b8a58e', '#8d745d', '#e3d6c2', '03');
+    placeOnSurface(notesArchive, -4, 28);
+    planetGroup.add(notesArchive);
+
+    const chatObservatory = makeBuilding('chat', 'Observatory · 对话助手', '#7f9aa8', '#5c7484', '#c6d8de', '04');
+    placeOnSurface(chatObservatory, 34, 116);
+    planetGroup.add(chatObservatory);
+
+    const treeColors = ['#8aa763', '#6d8554', '#a3bd7c', '#c6d8a5'];
+    for (let i = 0; i < 130; i += 1) {
+      const tree = i % 6 === 0
+        ? makeBush(treeColors[i % treeColors.length])
+        : makeTree(treeColors[i % treeColors.length]);
+      const lat = random() * 140 - 70;
+      const lon = random() * 360 - 180;
+      placeOnSurface(tree, lat, lon);
+      const scale = 0.3 + random() * 0.42;
+      tree.scale.setScalar(scale);
+      planetGroup.add(tree);
+    }
+
+    const hillColors = ['#b7c99a', '#93ad70', '#d0c9a8', '#6d8554'];
+    for (let i = 0; i < 42; i += 1) {
+      const hill = new THREE.Mesh(
+        new THREE.ConeGeometry(0.13 + random() * 0.17, 0.1 + random() * 0.14, 5),
+        new THREE.MeshStandardMaterial({
+          color: hillColors[i % hillColors.length],
+          flatShading: true,
+          roughness: 0.9,
+        }),
+      );
+      const lat = random() * 150 - 75;
+      const lon = random() * 360 - 180;
+      placeOnSurface(hill, lat, lon);
+      hill.scale.setScalar(0.75 + random() * 0.4);
+      planetGroup.add(hill);
+    }
+
+    const rockColor = '#9a9488';
+    for (let i = 0; i < 64; i += 1) {
+      const rock = makeRock();
+      const lat = random() * 160 - 80;
+      const lon = random() * 360 - 180;
+      placeOnSurface(rock, lat, lon);
+      planetGroup.add(rock);
+    }
+
+    const flowerColors = ['#e7b9c0', '#f3dfb0', '#c8d9b2', '#b8c8d8', '#e5c3a7'];
+    for (let i = 0; i < 72; i += 1) {
+      const flower = makeFlower(flowerColors[i % flowerColors.length]);
+      const lat = random() * 150 - 75;
+      const lon = random() * 360 - 180;
+      placeOnSurface(flower, lat, lon);
+      planetGroup.add(flower);
+    }
+
+    function makeWindmill() {
+      const group = new THREE.Group();
+      const towerMaterial = new THREE.MeshStandardMaterial({ color: '#efe7da', roughness: 0.95 });
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.52, 8), towerMaterial);
+      tower.position.y = 0.26;
+      group.add(tower);
+      const mast = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.012, 0.012, 0.46, 6),
+        new THREE.MeshStandardMaterial({ color: '#6b5a4a', roughness: 0.9 }),
+      );
+      mast.position.y = 0.54;
+      group.add(mast);
+      const sailGeometry = new THREE.BufferGeometry();
+      sailGeometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute([0, 0.07, -0.02, 0, 0.48, -0.02, 0, 0.07, 0.22], 3),
+      );
+      sailGeometry.computeVertexNormals();
+      const sail = new THREE.Mesh(
+        sailGeometry,
+        new THREE.MeshStandardMaterial({ color: '#fbf8f2', roughness: 0.85, side: THREE.DoubleSide }),
+      );
+      group.add(sail);
+      return group;
+    }
+
+    const windmills = [];
+    for (let i = 0; i < 3; i += 1) {
+      const windmill = makeWindmill();
+      const lat = random() * 60 - 30;
+      const lon = random() * 360 - 180;
+      placeOnSurface(windmill, lat, lon);
+      windmill.scale.setScalar(0.9 + random() * 0.4);
+      planetGroup.add(windmill);
+      windmills.push({ sail: windmill.children[2], speed: 0.6 + random() * 0.5 });
+    }
+
+    function makeCloud() {
+      const group = new THREE.Group();
+      const material = new THREE.MeshStandardMaterial({
+        color: '#fffdf8',
+        roughness: 1,
+        flatShading: true,
+        transparent: true,
+        opacity: 0.88,
+      });
+      for (let i = 0; i < 6; i += 1) {
+        const radius = 0.05 + random() * 0.12;
+        const puff = new THREE.Mesh(new THREE.IcosahedronGeometry(radius, 1), material.clone());
+        puff.position.set(
+          (random() - 0.5) * 0.5,
+          (random() - 0.5) * 0.22,
+          (random() - 0.5) * 0.2,
+        );
+        puff.scale.set(
+          0.5 + random() * 0.7,
+          0.35 + random() * 0.35,
+          0.5 + random() * 0.7,
+        );
+        group.add(puff);
+      }
+      return group;
+    }
+
+    const cloudGroup = new THREE.Group();
+    for (let i = 0; i < 22; i += 1) {
+      const cloud = makeCloud();
+      const angle = random() * Math.PI * 2;
+      const radius = 3.2 + random() * 1.2;
+      const y = (random() - 0.5) * 2.2;
+      cloud.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+      cloud.scale.set(
+        0.35 + random() * 0.45,
+        0.22 + random() * 0.28,
+        0.35 + random() * 0.45,
+      );
+      cloudGroup.add(cloud);
+    }
+    planetGroup.add(cloudGroup);
+
+    const uiGroup = new THREE.Group();
+    scene.add(uiGroup);
+
+    const teamName = makeSprite(
+      [{ text: '我们叫什么队', font: '400 62px "Instrument Serif", serif', color: '#141619' }],
+      { width: 720, height: 120, scaleX: 4.1, scaleY: 0.55 },
+    );
+    teamName.position.set(-7.2, 3.7, -2.2);
+    uiGroup.add(teamName);
+
+    const teamSubtitle = makeSprite(
+      [{ text: '姚芷馨 · 林悠 · 陈颖珊 · 陈佳絮', font: '500 24px "General Sans", sans-serif', color: 'rgba(20,22,25,0.64)' }],
+      { width: 640, height: 80, scaleX: 3.5, scaleY: 0.32 },
+    );
+    teamSubtitle.position.set(-7.2, 3.06, -2.2);
+    uiGroup.add(teamSubtitle);
+
+    const sheetInfo = makeSprite(
+      [
+        { text: 'Sheet 01 — A tiny planet', font: '500 22px "General Sans", sans-serif', color: '#141619' },
+        { text: 'Scale 1 : 200 000', font: '500 22px "General Sans", sans-serif', color: '#141619', y: 42 },
+        { text: '38.7223° N 9.1393° W', font: '500 22px "General Sans", sans-serif', color: '#141619', y: 84 },
+      ],
+      { width: 500, height: 150, scaleX: 2.6, scaleY: 0.62, startY: 24 },
+    );
+    sheetInfo.position.set(7.1, 3.55, -2.4);
+    uiGroup.add(sheetInfo);
+
+    const startButton = makeSprite(
+      [{ text: 'Start a project', font: '600 26px "General Sans", sans-serif', color: '#ffffff' }],
+      {
+        width: 420,
+        height: 90,
+        background: '#141619',
+        backgroundAlpha: 1,
+        scaleX: 2.1,
+        scaleY: 0.34,
+        userData: { action: 'start' },
+      },
+    );
+    startButton.position.set(7.4, 2.75, -2);
+    uiGroup.add(startButton);
+    interactiveMeshes.push(startButton);
+
+    const menuEntries = [
+      { label: '01 Studio', moduleId: 'reader', x: -3.7, y: 2.15, z: 3.4 },
+      { label: '02 Projects', moduleId: 'library', x: -1.2, y: 2.45, z: 4.3 },
+      { label: '03 Journal', moduleId: 'notes', x: 1.6, y: 2.35, z: 4.2 },
+      { label: '04 Contact', moduleId: 'chat', x: 4.3, y: 2.05, z: 3.1 },
+    ];
+
+    menuEntries.forEach((entry) => {
+      const menu = makeSprite(
+        [{ text: entry.label, font: '600 26px "General Sans", sans-serif', color: '#141619' }],
+        {
+          width: 340,
+          height: 84,
+          background: 'rgba(238,235,228,0.72)',
+          border: 'rgba(20,22,25,0.22)',
+          backgroundAlpha: 0.72,
+          scaleX: 1.8,
+          scaleY: 0.34,
+          userData: { moduleId: entry.moduleId },
+        },
+      );
+      menu.position.set(entry.x, entry.y, entry.z);
+      uiGroup.add(menu);
+      interactiveMeshes.push(menu);
+    });
+
+    const controlsPanel = makeSprite(
+      [
+        { text: 'W A S D   Fly the ship', font: '600 22px "General Sans", sans-serif', color: '#141619', y: 20 },
+        { text: 'Shift   Faster', font: '500 20px "General Sans", sans-serif', color: 'rgba(20,22,25,0.64)', y: 56 },
+        { text: 'Click   Fly to a spot or building', font: '500 20px "General Sans", sans-serif', color: 'rgba(20,22,25,0.64)', y: 92 },
+        { text: 'Drag   Look around', font: '500 20px "General Sans", sans-serif', color: 'rgba(20,22,25,0.64)', y: 128 },
+        { text: 'Scroll   Zoom out to the planet', font: '500 20px "General Sans", sans-serif', color: 'rgba(20,22,25,0.64)', y: 164 },
+        { text: 'Esc   Take off again', font: '500 20px "General Sans", sans-serif', color: 'rgba(20,22,25,0.64)', y: 200 },
+      ],
+      {
+        width: 560,
+        height: 270,
+        startY: 20,
+        scaleX: 3.1,
+        scaleY: 1.25,
+      },
+    );
+    controlsPanel.position.set(-7.8, -3.2, -0.8);
+    uiGroup.add(controlsPanel);
+
+    const draftingModel = makeSprite(
+      [
+        { text: 'Drafting the model', font: '500 22px "General Sans", sans-serif', color: '#141619', y: 12 },
+        { text: '92', font: '400 74px "Instrument Serif", serif', color: '#17806d', y: 78 },
+        { text: '%', font: '400 34px "Instrument Serif", serif', color: '#17806d', y: 76 },
+      ],
+      { width: 420, height: 170, startY: 10, scaleX: 2.2, scaleY: 0.72 },
+    );
+    draftingModel.position.set(-7.8, -4.6, -0.8);
+    uiGroup.add(draftingModel);
+
+    const centerPill = makeSprite(
+      [{ text: 'Click a building to fly there · or steer with W A S D', font: '500 24px "General Sans", sans-serif', color: '#141619' }],
+      {
+        width: 760,
+        height: 80,
+        background: 'rgba(255,255,255,0.86)',
+        border: 'rgba(20,22,25,0.2)',
+        backgroundAlpha: 0.86,
+        scaleX: 4.1,
+        scaleY: 0.34,
+      },
+    );
+    centerPill.position.set(0, -4.1, 3.2);
+    uiGroup.add(centerPill);
+
+    let isDay = true;
+    let soundOn = false;
+    let audioContext = null;
+    let ambientGain = null;
+    let ambientOscillator = null;
+
+    const dayButton = makeSprite(
+      [{ text: 'Day', font: '600 26px "General Sans", sans-serif', color: '#141619' }],
+      {
+        width: 260,
+        height: 80,
+        background: 'rgba(255,255,255,0.9)',
+        border: 'rgba(20,22,25,0.2)',
+        backgroundAlpha: 0.9,
+        scaleX: 1.6,
+        scaleY: 0.34,
+        userData: { action: 'day' },
+      },
+    );
+    dayButton.position.set(6.6, -3.1, 0.8);
+    uiGroup.add(dayButton);
+    interactiveMeshes.push(dayButton);
+
+    const soundButton = makeSprite(
+      [{ text: 'Sound: Off', font: '600 26px "General Sans", sans-serif', color: '#141619' }],
+      {
+        width: 320,
+        height: 80,
+        background: 'rgba(255,255,255,0.9)',
+        border: 'rgba(20,22,25,0.2)',
+        backgroundAlpha: 0.9,
+        scaleX: 1.9,
+        scaleY: 0.34,
+        userData: { action: 'sound' },
+      },
+    );
+    soundButton.position.set(7.4, -3.1, -0.3);
+    uiGroup.add(soundButton);
+    interactiveMeshes.push(soundButton);
+
+    const moduleData = {
+      reader: {
+        title: '01 — House · 书单推荐',
+        body: ['标签 + 偏好智能推荐', 'SSE 流式逐本推送书卡', '点击卡片查看详情与笔记'],
+        stats: ['50', '本内置书单', '43', '个标签', '8.9', '平均分'],
+      },
+      library: {
+        title: '02 — Pavilion · 书单列表',
+        body: ['内置 12 本精选书单', '点击查看书籍详情', '详情含简介与读书笔记'],
+        stats: ['50', '书籍', '43', '标签', '50', '笔记'],
+      },
+      notes: {
+        title: '03 — Archive · 读书笔记',
+        body: ['选择一本书查看笔记', '点击卡片进入详情', '笔记以黄绿色块展示'],
+        stats: ['12', '本可读', '04', '精选', '03', '笔记'],
+      },
+      chat: {
+        title: '04 — Observatory · 对话助手',
+        body: ['流式回答 · 原文引用', '思考过程 · 工具审批', '输入问题即可开始对话'],
+        stats: ['04', '消息类型', '08', '快捷指令', '60', 'FPS'],
+      },
+      start: {
+        title: 'Start a project · 开始书单推荐',
+        body: ['选择标签与偏好文本', '点「开始推荐」流式出卡片', '点建筑可查看书单 / 笔记 / 统计'],
+        stats: ['SSE', '流式', 'TAG', '标签', 'AI', '推荐'],
+      },
+    };
+
+    const infoPanel = makeSprite(
+      [],
+      {
+        width: 860,
+        height: 520,
+        background: 'rgba(246,242,233,0.94)',
+        border: 'rgba(23,128,109,0.5)',
+        backgroundAlpha: 0.94,
+        scaleX: 4.8,
+        scaleY: 2.5,
+      },
+    );
+    infoPanel.position.set(6.8, 0.25, 0.6);
+    uiGroup.add(infoPanel);
+
+    function updateInfoPanel(moduleId) {
+      const data = moduleData[moduleId] || moduleData.reader;
+      const lines = [
+        { text: data.title, font: '400 48px "Instrument Serif", serif', color: '#141619', y: -120 },
+      ];
+      data.body.forEach((text, index) => {
+        lines.push({ text, font: '500 26px "General Sans", sans-serif', color: 'rgba(20,22,25,0.72)', y: -20 + index * 56 });
+      });
+      const statsText = `${data.stats[0]}   ${data.stats[1]}    ${data.stats[2]}   ${data.stats[3]}    ${data.stats[4]}   ${data.stats[5]}`;
+      lines.push({ text: statsText, font: '600 24px "General Sans", sans-serif', color: '#17806d', y: 210 });
+      const texture = makeTextTexture(lines, {
+        width: 860,
+        height: 520,
+        background: 'rgba(246,242,233,0.94)',
+        border: 'rgba(23,128,109,0.5)',
+        backgroundAlpha: 0.94,
+        startY: 260,
+      });
+      infoPanel.material.map.dispose();
+      infoPanel.material.map = texture;
+      infoPanel.material.needsUpdate = true;
+    }
+    updateInfoPanel('reader');
+
+    // ============ B 同学通信层适配（单文件 HTML 版） ============
+    let backendBaseUrl = localStorage.getItem('backend_base_url') || 'http://127.0.0.1:8000';
+    const chatMsgTypes = {
+      TEXT: 'text',
+      QUOTE: 'quote',
+      SUMMARY: 'summary',
+      MINDMAP: 'mindmap',
+      NOTE: 'note',
+    };
+    const chatState = {
+      messages: [],
+      loading: false,
+      error: null,
+      mock: true,
+    };
+    let wereadKey = localStorage.getItem('weread_key') || '';
+    let chatTimer = null;
+    let chatController = null;
+
+    function chatId() {
+      return 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    }
+
+    function createChatMessage({ id, type, content, data, isEnd = true } = {}) {
+      return {
+        id: id || chatId(),
+        type: type || chatMsgTypes.TEXT,
+        content: content || '',
+        data: data || null,
+        isEnd,
+      };
+    }
+
+    function normalizeChatMessage(raw) {
+      if (!raw || typeof raw !== 'object') {
+        return createChatMessage({ type: chatMsgTypes.TEXT, content: '' });
+      }
+      let type = raw.type || raw.msg_type || raw.message_type;
+      if (!Object.values(chatMsgTypes).includes(type)) {
+        if (raw.mindmap || raw.nodes) type = chatMsgTypes.MINDMAP;
+        else if (raw.quote || raw.cite || raw.source) type = chatMsgTypes.QUOTE;
+        else if (raw.summary) type = chatMsgTypes.SUMMARY;
+        else if (raw.note) type = chatMsgTypes.NOTE;
+        else type = chatMsgTypes.TEXT;
+      }
+      const content = raw.content || raw.text || raw.reply || raw.message || '';
+      let data = null;
+      if (type === chatMsgTypes.QUOTE) {
+        const src = raw.source || raw.quote || raw.cite || raw;
+        data = {
+          text: src.text || src.content || content,
+          page: src.page ?? src.page_num ?? undefined,
+          docId: src.docId ?? src.doc_id ?? src.document_id ?? undefined,
+        };
+      } else if (type === chatMsgTypes.MINDMAP) {
+        const mm = raw.mindmap || raw;
+        data = {
+          root: mm.root || raw.root || raw.topic || '',
+          nodes: raw.nodes || mm.nodes || [],
+        };
+      }
+      const isEnd = raw.isEnd === undefined || raw.is_end === undefined
+        ? true
+        : raw.isEnd === true || raw.is_end === true || raw.isEnd === 1 || raw.is_end === 1;
+      return createChatMessage({
+        id: raw.id || raw.msg_id || undefined,
+        type,
+        content,
+        data,
+        isEnd,
+      });
+    }
+
+    function buildMockChatMessages() {
+      return [
+        createChatMessage({
+          type: chatMsgTypes.TEXT,
+          content: '你好，我是阅读助手。下面先给你一段原文引用和本章摘要。',
+          isEnd: false,
+        }),
+        createChatMessage({
+          type: chatMsgTypes.QUOTE,
+          content: '书中第 12 页有一段论述，和你关注的问题很相关：',
+          data: { text: '真正的阅读，是在思考中与作者对话。', page: 12, docId: 'mock_doc_001' },
+          isEnd: false,
+        }),
+        createChatMessage({
+          type: chatMsgTypes.SUMMARY,
+          content: '本章摘要：阅读需要主动思考，带着问题读书，读完后用自己的话复述一遍。',
+          isEnd: false,
+        }),
+        createChatMessage({
+          type: chatMsgTypes.MINDMAP,
+          content: '本章思维导图如下：',
+          data: {
+            root: '深度阅读',
+            nodes: [{ label: '主动思考' }, { label: '带着问题读' }, { label: '读后复述' }],
+          },
+          isEnd: false,
+        }),
+        createChatMessage({
+          type: chatMsgTypes.NOTE,
+          content: '【读书笔记】阅读的本质是与作者对话；带着问题读、读完复述，是提升理解的关键。',
+          isEnd: true,
+        }),
+      ];
+    }
+
+    function renderChat() {
+      const container = document.getElementById('chatMessages');
+      if (!container) return;
+      container.innerHTML = '';
+      chatState.messages.forEach((msg) => {
+        const div = document.createElement('div');
+        div.className = 'chat-msg';
+        if (msg.role === 'user') {
+          div.className += ' user';
+          div.textContent = msg.content;
+        } else {
+          div.className += ' ' + (msg.type || 'text');
+          let text = msg.content || '';
+          if (msg.type === chatMsgTypes.QUOTE && msg.data) {
+            text += `\n原文：${msg.data.text || ''}（第 ${msg.data.page ?? '-'} 页）`;
+          }
+          if (msg.type === chatMsgTypes.MINDMAP && msg.data) {
+            text += `\n主题：${msg.data.root || ''}`;
+            (msg.data.nodes || []).forEach((node) => {
+              text += `\n· ${node.label || node}`;
+            });
+          }
+          div.textContent = text;
+        }
+        container.appendChild(div);
+      });
+            if (chatState.error) {
+        const err = document.createElement('div');
+        err.className = 'chat-msg error';
+        err.textContent = '⚠ ' + chatState.error;
+        container.appendChild(err);
+      }
+      container.scrollTop = container.scrollHeight;
+      document.getElementById('chatSend').disabled = chatState.loading;
+      document.getElementById('chatStop').disabled = !chatState.loading;
+    }
+
+    function openChat() {
+      document.getElementById('chatPanel').classList.add('open');
+      renderChat();
+      updateInfoPanel('chat');
+    }
+
+    function closeChat() {
+      document.getElementById('chatPanel').classList.remove('open');
+    }
+
+    function stopChatGenerate() {
+      if (chatTimer) {
+        clearInterval(chatTimer);
+        chatTimer = null;
+      }
+      if (chatController) {
+        chatController.abort();
+        chatController = null;
+      }
+      chatState.loading = false;
+      renderChat();
+    }
+
+    function sendChatMessage(text) {
+      const content = String(text || '').trim();
+      if (!content || chatState.loading) return;
+      chatState.messages.push({ id: chatId(), role: 'user', content });
+      chatState.loading = true;
+      chatState.error = null;
+      renderChat();
+
+      if (chatState.mock) {
+        const mockMessages = buildMockChatMessages();
+        let index = 0;
+        chatTimer = setInterval(() => {
+          if (index < mockMessages.length) {
+            chatState.messages.push(mockMessages[index]);
+            index += 1;
+            renderChat();
+          } else {
+            clearInterval(chatTimer);
+            chatTimer = null;
+            chatState.loading = false;
+            renderChat();
+          }
+        }, 600);
+        return;
+      }
+
+                  chatController = new AbortController();
+      (async () => {
+        try {
+          const history = chatState.messages
+            .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+            .map((msg) => ({ role: msg.role, content: msg.content }));
+          // 真实后端：POST /api/ai/chat（非流式 JSON，见后端 project_spec.md）
+          const resp = await fetch(backendBaseUrl + '/api/ai/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: content,
+              history,
+            }),
+            signal: chatController.signal,
+          });
+          const result = await resp.json();
+          if (!resp.ok || result.success === false) {
+            throw new Error(result.message || result.detail || 'HTTP ' + resp.status);
+          }
+          const reply = (result.data && result.data.reply) || '';
+          chatState.messages.push(
+            createChatMessage({ type: chatMsgTypes.TEXT, content: reply, isEnd: true }),
+          );
+          chatState.loading = false;
+          chatController = null;
+          renderChat();
+        } catch (err) {
+          if (err && err.name === 'AbortError') {
+            chatState.loading = false;
+            chatController = null;
+            renderChat();
+            return;
+          }
+          chatState.error = friendlyFetchError(err);
+          chatState.loading = false;
+          chatController = null;
+          renderChat();
+        }
+      })();
+    }
+
+    document.getElementById('chatClose').addEventListener('click', closeChat);
+    // 悬浮按钮：打开/关闭对话助手
+    document.getElementById('chatFloating').addEventListener('click', () => {
+      const panel = document.getElementById('chatPanel');
+      if (panel.classList.contains('open')) {
+        closeChat();
+      } else {
+        openChat();
+      }
+    });
+    document.getElementById('chatMode').addEventListener('click', (event) => {
+      chatState.mock = !chatState.mock;
+      event.currentTarget.textContent = chatState.mock ? 'Mock' : 'Real';
+    });
+    const wereadKeyInput = document.getElementById('wereadKey');
+    wereadKeyInput.value = wereadKey;
+    wereadKeyInput.addEventListener('input', (event) => {
+      wereadKey = event.target.value.trim();
+      localStorage.setItem('weread_key', wereadKey);
+    });
+    const backendUrlInput = document.getElementById('backendUrl');
+    backendUrlInput.value = backendBaseUrl;
+    backendUrlInput.addEventListener('input', (event) => {
+      backendBaseUrl = event.target.value.trim().replace(/\/+$/, '');
+      localStorage.setItem('backend_base_url', backendBaseUrl);
+    });
+    document.getElementById('chatSend').addEventListener('click', () => {
+      const input = document.getElementById('chatInput');
+      sendChatMessage(input.value);
+      input.value = '';
+    });
+    document.getElementById('chatInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        const input = document.getElementById('chatInput');
+        sendChatMessage(input.value);
+        input.value = '';
+      }
+    });
+    document.getElementById('chatStop').addEventListener('click', stopChatGenerate);
+    window.__readingAgentChat = {
+      openChat,
+      closeChat,
+      sendChatMessage,
+      stopChatGenerate,
+      state: chatState,
+    };
+
+    // ============ 微信读书数据面板（书籍 / 笔记 / 统计） ============
+    function openDataPanel(title, loader) {
+      closeChat();
+      document.getElementById('dataTitle').textContent = title;
+      document.getElementById('dataPanel').classList.add('open');
+      const content = document.getElementById('dataContent');
+      content.innerHTML = '<div class="data-item">正在加载…</div>';
+      if (loader) loader();
+    }
+
+    function closeDataPanel() {
+      document.getElementById('dataPanel').classList.remove('open');
+    }
+
+    function renderDataItems(items, fallbackText) {
+      const content = document.getElementById('dataContent');
+      if (!items || items.length === 0) {
+        content.innerHTML = '<div class="data-item">' + (fallbackText || '暂无数据') + '</div>';
+        return;
+      }
+      content.innerHTML = '';
+      items.forEach((item) => {
+        const div = document.createElement('div');
+        div.className = 'data-item';
+        const title = item.title || item.bookTitle || item.name || item.book_name || item.content || '';
+        const extra = item.author || item.book_title || item.createdTime || item.created_time || '';
+        const strong = document.createElement('strong');
+        strong.textContent = String(title).slice(0, 80);
+        div.appendChild(strong);
+        if (extra) {
+          const small = document.createElement('small');
+          small.textContent = String(extra).slice(0, 80);
+          div.appendChild(small);
+        }
+        content.appendChild(div);
+      });
+    }
+
+    function friendlyFetchError(err) {
+      if (err instanceof TypeError) {
+        return '后端未启动，请先启动后端服务（127.0.0.1:8000）';
+      }
+      return err && err.message ? err.message : String(err);
+    }
+
+    // ============ 书单推荐面板（替代原阅读文档功能） ============
+    let selectedBookId = null;
+    let recSelectedTags = [];
+
+    const coverColors = ['#dceee3', '#e3f1e8', '#f0f4dc', '#d7e9df', '#cfe6d8'];
+    function bookCoverColor(id) {
+      let sum = 0;
+      String(id).split('').forEach(function (c) { sum += c.charCodeAt(0); });
+      return coverColors[sum % coverColors.length];
+    }
+
+    function bookCardHTML(book) {
+      const cover = book.cover
+        ? '<img src="' + book.cover + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
+        : '<span style="font-size:32px">📖</span>';
+      return '<div class="book-card" data-id="' + book.id + '">' +
+        '<div class="book-cover" style="background:' + bookCoverColor(book.id) + '">' + cover + '</div>' +
+        '<div class="book-info">' +
+        '<div class="book-title">' + (book.title || '') + '</div>' +
+        '<div class="book-author">' + (book.author || '') + '</div>' +
+        '<div class="book-desc">' + (book.desc || '') + '</div>' +
+        '<div class="book-tags">' + (book.tags || []).map(function (t) { return '<span class="tag-chip-mini">' + t + '</span>'; }).join('') + '</div>' +
+        '</div></div>';
+    }
+
+    function renderDetailInto(content, book, notes) {
+      content.innerHTML =
+        '<div class="book-detail-title">' + (book.title || '') + '</div>' +
+        '<div class="book-detail-sub">' + (book.author || '') + ' · ' + (book.rating || '-') + ' 分</div>' +
+        '<div class="book-detail-desc">' + (book.desc || '') + '</div>' +
+        '<div class="book-tags">' + (book.tags || []).map(function (t) { return '<span class="tag-chip-mini">' + t + '</span>'; }).join('') + '</div>' +
+        '<div class="rec-hint">📝 读书笔记</div>';
+      (notes || []).forEach(function (note) {
+        content.insertAdjacentHTML('beforeend', '<div class="note-item">' + (note.content || '') + '</div>');
+      });
+      if (!notes || notes.length === 0) {
+        content.insertAdjacentHTML('beforeend', '<div class="data-item">暂无笔记</div>');
+      }
+    }
+
+    function openBookDetail(bookId) {
+      selectedBookId = bookId;
+      const content = document.getElementById('dataContent');
+      content.innerHTML = '<div class="data-item">正在加载…</div>';
+      fetchBookDetail(bookId)
+        .then(function (book) {
+          return fetchBookNotes(bookId).then(function (notes) {
+            renderDetailInto(content, book, notes);
+          });
+        })
+        .catch(function (err) {
+          content.innerHTML = '<div class="data-item">' + friendlyFetchError(err) + '</div>';
+        });
+    }
+
+    // 书单推荐面板（01 Studio）
+    function openRecommendPanel() {
+      const content = document.getElementById('dataContent');
+      content.innerHTML =
+        '<div class="rec-toolbar">' +
+        '<button id="recMode" class="rec-mode">' + (isBookMock() ? 'Mock' : 'Real') + '</button>' +
+        '<button id="recStats" class="rec-mode">统计</button>' +
+        '<button id="recClear" class="rec-mode">清空</button>' +
+        '</div>' +
+        '<div class="rec-filter" id="recFilter"><span class="rec-hint">加载标签中…</span></div>' +
+        '<div class="rec-actions">' +
+        '<input id="recPref" class="rec-input" placeholder="偏好，如：心理学 / 科幻" />' +
+        '<select id="recCount" class="rec-select">' +
+        '<option value="3">3 本</option><option value="5" selected>5 本</option><option value="8">8 本</option>' +
+        '</select>' +
+        '<button id="recStart" class="rec-btn-primary">开始推荐</button>' +
+        '<button id="recStop" class="rec-btn-stop" style="display:none">停止</button>' +
+        '</div>' +
+        '<div id="recTip" class="rec-tip" style="display:none"></div>' +
+        '<div id="recCards" class="rec-cards"></div>';
+
+      fetchBookList()
+        .then(function (books) {
+          const set = new Set();
+          books.forEach(function (b) { (b.tags || []).forEach(function (t) { set.add(t); }); });
+          const filter = document.getElementById('recFilter');
+          filter.innerHTML = '';
+          recSelectedTags = [];
+          set.forEach(function (tag) {
+            const btn = document.createElement('button');
+            btn.className = 'rec-tag';
+            btn.textContent = tag;
+            btn.addEventListener('click', function () {
+              if (recSelectedTags.includes(tag)) {
+                recSelectedTags.splice(recSelectedTags.indexOf(tag), 1);
+                btn.classList.remove('active');
+              } else {
+                recSelectedTags.push(tag);
+                btn.classList.add('active');
+              }
+            });
+            filter.appendChild(btn);
+          });
+        })
+        .catch(function (err) {
+          document.getElementById('recFilter').innerHTML = '<span class="rec-hint">标签加载失败：' + (err.message || err) + '</span>';
+        });
+
+      document.getElementById('recMode').addEventListener('click', function (e) {
+        setBookMock(!isBookMock());
+        e.currentTarget.textContent = isBookMock() ? 'Mock' : 'Real';
+      });
+      document.getElementById('recStats').addEventListener('click', function () {
+        openDataPanel('书单统计', loadBookStatsData);
+      });
+      document.getElementById('recClear').addEventListener('click', function () {
+        stopGenerate();
+        document.getElementById('recCards').innerHTML = '';
+      });
+      document.getElementById('recStart').addEventListener('click', startRecommend);
+      document.getElementById('recStop').addEventListener('click', function () {
+        stopGenerate();
+        document.getElementById('recStart').disabled = false;
+        document.getElementById('recStop').style.display = 'none';
+        document.getElementById('recTip').style.display = 'none';
+      });
+    }
+
+    let recSeq = 0; // 推荐序号：丢弃上一次未完成流的结果，避免新旧卡片串流
+    function startRecommend() {
+      stopGenerate(); // 先终止上一次未完成的推荐
+      const seq = ++recSeq;
+      const cards = document.getElementById('recCards');
+      const tip = document.getElementById('recTip');
+      const startBtn = document.getElementById('recStart');
+      const stopBtn = document.getElementById('recStop');
+      cards.innerHTML = ''; // 清空上一次结果
+      tip.style.display = 'flex';
+      startBtn.disabled = true;
+      stopBtn.style.display = '';
+
+      sendQuery(
+        {
+          tags: recSelectedTags,
+          preference: document.getElementById('recPref').value.trim(),
+          count: Number(document.getElementById('recCount').value),
+        },
+        {
+          onThinking: function (msg) { if (seq === recSeq) tip.textContent = msg.content; },
+          onToolCall: function (msg) { if (seq === recSeq) tip.textContent = msg.content; },
+          onMessage: function (msg) {
+            if (seq !== recSeq || !msg.data) return; // 旧流的结果丢弃
+            cards.insertAdjacentHTML('beforeend', bookCardHTML(msg.data));
+            cards.scrollTop = cards.scrollHeight;
+            cards.querySelectorAll('.book-card').forEach(function (el) {
+              if (!el.__bound) {
+                el.__bound = true;
+                el.addEventListener('click', function () { openBookDetail(el.getAttribute('data-id')); });
+              }
+            });
+          },
+          onDone: function () {
+            if (seq !== recSeq) return;
+            startBtn.disabled = false;
+            stopBtn.style.display = 'none';
+            tip.style.display = 'none';
+          },
+          onError: function (err) {
+            if (seq !== recSeq) return;
+            startBtn.disabled = false;
+            stopBtn.style.display = 'none';
+            tip.style.display = 'none';
+            cards.innerHTML = '<div class="rec-error">⚠ ' + (err.message || err) + '</div>';
+          },
+        },
+      );
+    }
+
+    // 全部书单列表（02 Projects）
+    function loadBookListData() {
+      const content = document.getElementById('dataContent');
+      content.innerHTML = '<div class="data-item">正在加载…</div>';
+      fetchBookList()
+        .then(function (books) {
+          content.innerHTML = '';
+          if (!books || books.length === 0) {
+            content.innerHTML = '<div class="data-item">暂无书单</div>';
+            return;
+          }
+          books.forEach(function (book) {
+            const div = document.createElement('div');
+            div.className = 'book-list-item';
+            div.innerHTML = '<span class="list-title">' + book.title + '</span><span class="list-author">' + (book.author || '') + '</span>';
+            div.addEventListener('click', function () { openBookDetail(book.id); });
+            content.appendChild(div);
+          });
+        })
+        .catch(function (err) {
+          content.innerHTML = '<div class="data-item">' + friendlyFetchError(err) + '</div>';
+        });
+    }
+
+    // 读书笔记（03 Journal）
+    function loadBookNotesData() {
+      const content = document.getElementById('dataContent');
+      content.innerHTML = '<div class="data-item">正在加载…</div>';
+      renderNotesLibrary(content);
+    }
+
+    // 书单统计（推荐面板入口）
+    function loadBookStatsData() {
+      const content = document.getElementById('dataContent');
+      content.innerHTML = '<div class="data-item">正在加载…</div>';
+      fetchBookStats()
+        .then(function (stats) {
+          if (!stats) { content.innerHTML = '<div class="data-item">暂无统计</div>'; return; }
+          content.innerHTML =
+            '<div class="stat-grid">' +
+            '<div class="stat-item"><strong>' + stats.totalBooks + '</strong><span>书籍总数</span></div>' +
+            '<div class="stat-item"><strong>' + stats.totalTags + '</strong><span>标签种类</span></div>' +
+            '<div class="stat-item"><strong>' + stats.totalNotes + '</strong><span>笔记总数</span></div>' +
+            '<div class="stat-item"><strong>' + stats.avgRating + '</strong><span>平均评分</span></div>' +
+            '</div>';
+        })
+        .catch(function (err) {
+          content.innerHTML = '<div class="data-item">' + friendlyFetchError(err) + '</div>';
+        });
+    }
+
+    // ============ 读书笔记：按书籍分组 + 卡片化 + 本地编辑 ============
+    const LOCAL_NOTES_KEY = 'reading_agent_local_notes_v1';
+
+    function getLocalNotes() {
+      try {
+        return JSON.parse(localStorage.getItem(LOCAL_NOTES_KEY)) || {};
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function saveLocalNotes(notes) {
+      try {
+        localStorage.setItem(LOCAL_NOTES_KEY, JSON.stringify(notes));
+      } catch (err) {
+        console.warn('[notes] 保存本地笔记失败：', err);
+      }
+    }
+
+    function escapeNoteHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function noteCardHTML(book, note) {
+      const bookId = encodeURIComponent(book.id);
+      const noteId = encodeURIComponent(note.id);
+      return '<div class="note-card">' +
+        '<p>' + escapeNoteHtml(note.content) + '</p>' +
+        '<div class="note-card-meta">' +
+        '<span>' + (note.created_time || note.createdTime || '') + '</span>' +
+        '<span class="note-card-actions">' +
+        '<button data-book="' + bookId + '" data-note="' + noteId + '" class="note-edit">编辑</button>' +
+        '<button data-book="' + bookId + '" data-note="' + noteId + '" class="note-del">删除</button>' +
+        '</span>' +
+        '</div>' +
+        '</div>';
+    }
+
+    function renderNotesLibrary(content) {
+      content.innerHTML = '<div class="data-item">正在加载…</div>';
+      fetchBookList()
+        .then(function (books) {
+          return Promise.all(
+            books.map(function (book) {
+              return fetchBookNotes(book.id).then(function (notes) {
+                return { book: book, notes: notes || [] };
+              });
+            }),
+          );
+        })
+        .then(function (groups) {
+          const localNotes = getLocalNotes();
+          let html = '<div class="note-library">';
+          groups.forEach(function (group) {
+            const book = group.book;
+            const local = localNotes[book.id] || [];
+            const localById = {};
+            local.forEach(function (note) { localById[note.id] = note; });
+            const visible = [];
+            (group.notes || []).forEach(function (note) {
+              if (!localById[note.id]) visible.push(note);
+            });
+            Object.keys(localById).forEach(function (id) {
+              const note = localById[id];
+              if (!note.deleted) visible.push(note);
+            });
+            visible.sort(function (a, b) {
+              return String(a.id).localeCompare(String(b.id));
+            });
+            html += '<div class="note-group">' +
+              '<div class="note-group-head"><strong>' + escapeNoteHtml(book.title) + '</strong><small>' +
+              escapeNoteHtml(book.author) + ' · ' + visible.length + ' 条</small></div>';
+            visible.forEach(function (note) {
+              html += noteCardHTML(book, note);
+            });
+            html += '<button class="note-add-btn" data-book="' + encodeURIComponent(book.id) + '">+ 新增笔记</button>' +
+              '</div>';
+          });
+          html += '</div>';
+          content.innerHTML = html;
+          bindNoteActions(content);
+        })
+        .catch(function (err) {
+          content.innerHTML = '<div class="data-item">' + friendlyFetchError(err) + '</div>';
+        });
+    }
+
+    function bindNoteActions(content) {
+      content.querySelectorAll('.note-add-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          openNoteEditor(decodeURIComponent(btn.getAttribute('data-book')), null);
+        });
+      });
+      content.querySelectorAll('.note-edit').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          openNoteEditor(
+            decodeURIComponent(btn.getAttribute('data-book')),
+            decodeURIComponent(btn.getAttribute('data-note')),
+          );
+        });
+      });
+      content.querySelectorAll('.note-del').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          deleteNote(
+            decodeURIComponent(btn.getAttribute('data-book')),
+            decodeURIComponent(btn.getAttribute('data-note')),
+          );
+        });
+      });
+    }
+
+    function openNoteEditor(bookId, noteId) {
+      const content = document.getElementById('dataContent');
+      let value = '';
+      if (noteId) {
+        const localNotes = getLocalNotes();
+        const local = (localNotes[bookId] || []).find(function (n) { return n.id === noteId; });
+        if (local) value = local.content || '';
+      }
+      content.innerHTML =
+        '<div class="note-editor">' +
+        '<textarea id="noteEditorText" placeholder="写点什么…">' + escapeNoteHtml(value) + '</textarea>' +
+        '<div class="note-editor-actions">' +
+        '<button class="note-editor-cancel" id="noteEditorCancel">取消</button>' +
+        '<button class="note-editor-save" id="noteEditorSave">保存</button>' +
+        '</div>' +
+        '</div>';
+      document.getElementById('noteEditorCancel').addEventListener('click', function () {
+        renderNotesLibrary(content);
+      });
+      document.getElementById('noteEditorSave').addEventListener('click', function () {
+        const text = document.getElementById('noteEditorText').value.trim();
+        if (!text) return;
+        const all = getLocalNotes();
+        all[bookId] = all[bookId] || [];
+        const id = noteId || ('local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+        const idx = all[bookId].findIndex(function (n) { return n.id === id; });
+        const entry = { id: id, content: text, updatedAt: Date.now(), deleted: false };
+        if (idx >= 0) all[bookId][idx] = entry;
+        else all[bookId].push(entry);
+        saveLocalNotes(all);
+        renderNotesLibrary(content);
+      });
+    }
+
+    function deleteNote(bookId, noteId) {
+      const all = getLocalNotes();
+      const list = all[bookId] || [];
+      const idx = list.findIndex(function (n) { return n.id === noteId; });
+      if (idx >= 0) {
+        list[idx].deleted = true;
+      } else {
+        list.push({ id: noteId, content: '', deleted: true, updatedAt: Date.now() });
+      }
+      saveLocalNotes(all);
+      renderNotesLibrary(document.getElementById('dataContent'));
+    }
+
+    document.getElementById('dataClose').addEventListener('click', closeDataPanel);
+
+    let dragRotationY = 0;
+    let dragRotationX = 0;
+    let isDragging = false;
+    let moved = false;
+    let pointerStartX = 0;
+    let pointerStartY = 0;
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    function handlePointerDown(event) {
+      isDragging = true;
+      moved = false;
+      pointerStartX = event.clientX;
+      pointerStartY = event.clientY;
+      canvasHost.style.cursor = 'grabbing';
+    }
+
+    function handlePointerMove(event) {
+      if (!isDragging) return;
+      const dx = event.clientX - pointerStartX;
+      const dy = event.clientY - pointerStartY;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      dragRotationY += dx * 0.005;
+      dragRotationX = Math.max(-0.55, Math.min(0.55, dragRotationX + dy * 0.003));
+      pointerStartX = event.clientX;
+      pointerStartY = event.clientY;
+    }
+
+    function handlePointerUp(event) {
+      isDragging = false;
+      canvasHost.style.cursor = 'grab';
+      if (moved) return;
+
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(interactiveMeshes, false);
+      const hit = hits[0];
+      if (!hit) return;
+
+      const userData = hit.object.userData || {};
+      if (userData.moduleId) {
+        flyToModule(userData.moduleId);
+      } else if (userData.action === 'start') {
+        updateInfoPanel('start');
+        flyToPoint(new THREE.Vector3(4.5, 0.8, 2.8));
+      } else if (userData.action === 'day') {
+        toggleDayNight();
+      } else if (userData.action === 'sound') {
+        toggleSound();
+      }
+    }
+
+    canvasHost.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    canvasHost.style.cursor = 'grab';
+
+    let cameraTheta = 0.15;
+    let cameraPhi = 0.34;
+    let cameraRadius = 7.2;
+    let flyTarget = null;
+
+    function updateCamera() {
+      camera.position.set(
+        cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta),
+        cameraRadius * Math.cos(cameraPhi),
+        cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta),
+      );
+      camera.lookAt(0, 0, 0);
+    }
+    updateCamera();
+
+    function flyToModule(moduleId) {
+      const building = planetGroup.children.find((child) => child.userData && child.userData.moduleId === moduleId);
+      if (!building) return;
+      const worldPosition = new THREE.Vector3();
+      building.getWorldPosition(worldPosition);
+      flyToPoint(worldPosition);
+      updateInfoPanel(moduleId);
+      if (moduleId === 'chat') openChat();
+      else closeChat();
+      if (moduleId === 'reader') openDataPanel('书单推荐', openRecommendPanel);
+      else if (moduleId === 'library') openDataPanel('书单列表', loadBookListData);
+      else if (moduleId === 'notes') openDataPanel('读书笔记', loadBookNotesData);
+    }
+
+    function flyToPoint(worldPosition) {
+      const direction = worldPosition.clone().normalize();
+      const targetRadius = 5.4;
+      const targetPhi = Math.max(0.1, Math.min(1.35, Math.acos(direction.y)));
+      const targetTheta = Math.atan2(direction.z, direction.x);
+      let deltaTheta = targetTheta - cameraTheta;
+      if (deltaTheta > Math.PI) deltaTheta -= Math.PI * 2;
+      if (deltaTheta < -Math.PI) deltaTheta += Math.PI * 2;
+      flyTarget = {
+        fromPhi: cameraPhi,
+        toPhi: targetPhi,
+        fromTheta: cameraTheta,
+        deltaTheta,
+        fromRadius: cameraRadius,
+        toRadius: targetRadius,
+        progress: 0,
+      };
+    }
+
+    const keys = {};
+    window.addEventListener('keydown', (event) => {
+      keys[event.code] = true;
+      if (event.code === 'Escape') {
+        cameraTheta = 0.15;
+        cameraPhi = 0.34;
+        cameraRadius = 7.2;
+        flyTarget = null;
+      }
+    });
+    window.addEventListener('keyup', (event) => {
+      keys[event.code] = false;
+    });
+
+    window.addEventListener('wheel', (event) => {
+      cameraRadius = Math.max(3.2, Math.min(12, cameraRadius + event.deltaY * 0.006));
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function toggleDayNight() {
+      isDay = !isDay;
+      sun.intensity = isDay ? 1.5 : 0.08;
+      ambient.intensity = isDay ? 0.85 : 0.32;
+      rim.intensity = isDay ? 0.7 : 0.12;
+      skyMaterial.uniforms.nightFactor.value = isDay ? 0 : 1;
+      stars.visible = !isDay;
+      dayButton.material.map.dispose();
+      dayButton.material.map = makeTextTexture(
+        [{ text: isDay ? 'Day' : 'Night', font: '600 26px "General Sans", sans-serif', color: '#141619' }],
+        { width: 260, height: 80, background: 'rgba(255,255,255,0.9)', border: 'rgba(20,22,25,0.2)', backgroundAlpha: 0.9 },
+      );
+      dayButton.material.needsUpdate = true;
+    }
+
+    function toggleSound() {
+      soundOn = !soundOn;
+      if (soundOn) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        ambientOscillator = audioContext.createOscillator();
+        ambientOscillator.type = 'sine';
+        ambientOscillator.frequency.value = 96;
+        ambientGain = audioContext.createGain();
+        ambientGain.gain.value = 0.025;
+        ambientOscillator.connect(ambientGain);
+        ambientGain.connect(audioContext.destination);
+        ambientOscillator.start();
+      } else {
+        if (ambientOscillator) ambientOscillator.stop();
+        if (audioContext) audioContext.close();
+        ambientOscillator = null;
+        audioContext = null;
+      }
+      soundButton.material.map.dispose();
+      soundButton.material.map = makeTextTexture(
+        [{ text: soundOn ? 'Sound: On' : 'Sound: Off', font: '600 26px "General Sans", sans-serif', color: '#141619' }],
+        { width: 320, height: 80, background: 'rgba(255,255,255,0.9)', border: 'rgba(20,22,25,0.2)', backgroundAlpha: 0.9 },
+      );
+      soundButton.material.needsUpdate = true;
+    }
+
+    const loaderCount = document.getElementById('loader-count');
+    const loaderRing = document.getElementById('loader-ring');
+    const enterButton = document.getElementById('enter');
+    let loadProgress = 0;
+    const loadTimer = window.setInterval(() => {
+      loadProgress = Math.min(100, loadProgress + 1 + Math.random() * 2.5);
+      loaderCount.textContent = String(Math.floor(loadProgress));
+      loaderRing.style.setProperty('--progress', `${loadProgress * 3.6}deg`);
+      if (loadProgress >= 100) {
+        window.clearInterval(loadTimer);
+        enterButton.classList.add('ready');
+      }
+    }, 70);
+
+    enterButton.addEventListener('click', () => {
+      window.clearInterval(loadTimer);
+      document.getElementById('loader').classList.add('hidden');
+      planet.visible = true;
+      ocean.visible = true;
+      wireframePlanet.visible = false;
+      updateInfoPanel('reader');
+    });
+
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => {
+      const elapsed = clock.getElapsedTime();
+      M.value = elapsed;
+      wireframePlanet.material.opacity = 0.25 + 0.75 * (loadProgress / 100);
+      planetGroup.rotation.y = dragRotationY + elapsed * 0.07;
+      planetGroup.rotation.x = dragRotationX;
+      stars.rotation.y = elapsed * 0.02;
+      windmills.forEach((windmill, index) => {
+        windmill.sail.rotation.z = elapsed * windmill.speed + index * 2.1;
+      });
+
+      if (flyTarget) {
+        flyTarget.progress += 0.025;
+        const t = Math.min(1, flyTarget.progress);
+        const eased = 1 - Math.pow(1 - t, 3);
+        cameraPhi = flyTarget.fromPhi + (flyTarget.toPhi - flyTarget.fromPhi) * eased;
+        cameraTheta = flyTarget.fromTheta + flyTarget.deltaTheta * eased;
+        cameraRadius = flyTarget.fromRadius + (flyTarget.toRadius - flyTarget.fromRadius) * eased;
+        updateCamera();
+        if (t >= 1) flyTarget = null;
+      } else {
+        const speed = keys['ShiftLeft'] || keys['ShiftRight'] ? 0.045 : 0.022;
+        if (keys['KeyW']) cameraRadius = Math.max(3.2, cameraRadius - speed);
+        if (keys['KeyS']) cameraRadius = Math.min(12, cameraRadius + speed);
+        if (keys['KeyA']) cameraTheta -= speed * 1.6;
+        if (keys['KeyD']) cameraTheta += speed * 1.6;
+        if (keys['Space']) cameraPhi = Math.max(0.1, Math.min(1.35, cameraPhi + speed));
+        if (keys['KeyC']) cameraPhi = Math.max(0.1, Math.min(1.35, cameraPhi - speed));
+        updateCamera();
+      }
+
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>
